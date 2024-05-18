@@ -1,0 +1,14 @@
+{
+  "title": "RobotDeathmatch",
+  "scenes": [
+    {
+      "name": "AridLands",
+      "uuid": "ed4279a6-7009-4792-953f-a92261434d85"
+    }
+  ],
+  "projectVersion": 25,
+  "lastOpenedScene": "\\Assets\\Scenes\\AridLands.rogueScene",
+  "tags": [
+    "Enemy"
+  ]
+}
