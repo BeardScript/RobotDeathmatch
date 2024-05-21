@@ -9,8 +9,18 @@ export class RootModel extends Croquet.Model {
 
   static types() {
     return {
-      "THREE.Vector3": THREE.Vector3,
-      "THREE.Quaternion": THREE.Quaternion,
+      // "THREE.Vector3": THREE.Vector3,
+      // "THREE.Quaternion": THREE.Quaternion,
+      "THREE.Vector3": {
+        cls: THREE.Vector3,
+        write: v => [v.x, v.y, v.z],        // serialized as '[...,...,...]' which is shorter than the default above
+        read: v => new THREE.Vector3(v[0], v[1], v[2]),
+      },
+      "THREE.Quaternion": {
+        cls: THREE.Quaternion,
+        write: v => [v.x, v.y, v.z, v.w],        // serialized as '[...,...,...]' which is shorter than the default above
+        read: v => new THREE.Quaternion(v[0], v[1], v[2], v[3]),
+      },
       "THREE.Euler": THREE.Euler,
     };
   }

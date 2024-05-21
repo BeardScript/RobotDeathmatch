@@ -6,8 +6,10 @@ import { RootModel } from '@RE/RogueEngine/rogue-croquet/RootModel';
 import CroquetView from '@RE/RogueEngine/rogue-croquet/CroquetView.re';
 
 class TransformBroadcasterModel extends BaseModel {
-  pos = new THREE.Vector3();
-  rot = new THREE.Quaternion();
+  transform = {
+    pos: new THREE.Vector3(),
+    rot: new THREE.Quaternion(),
+  }
 }
 
 TransformBroadcasterModel.register("TransformBroadcasterModel");
@@ -19,35 +21,32 @@ export default class TransformBroadcaster extends CroquetView {
   networkRot: THREE.Quaternion = new THREE.Quaternion();
   lastPos = new THREE.Vector3(0, 1 , 0);
   lastRot = new THREE.Quaternion();
+  rate = 20;
+
+  private time = 0;
+  private quaternion = new THREE.Quaternion();
 
   @TDSController.require()
   tdsController: TDSController;
 
-  @TransformBroadcasterModel.prop(true) 
-  get pos() {
-    return this.object3d.position;
+  @TransformBroadcasterModel.prop(true)
+  get transform() {
+    return {
+      pos: this.object3d.position,
+      rot: this.object3d.quaternion,
+    }
   }
 
-  set pos(v: THREE.Vector3) {
+  set transform(v: {pos: THREE.Vector3, rot: THREE.Quaternion}) {
     const pos = this.networkPos || new THREE.Vector3();
-    pos.copy(v);
-  }
+    pos.copy(v.pos);
 
-  private quaternion = new THREE.Quaternion();
-
-  @TransformBroadcasterModel.prop(true) 
-  get rot() {
-    return this.quaternion;
-  }
-
-  set rot(q: THREE.Quaternion) {
     const rot = this.networkRot || new THREE.Quaternion();
-    rot.copy(q);
+    rot.copy(v.rot);
   }
 
   init() {
-    this.pos = this.model.pos;
-    this.rot = this.model.rot;
+    this.transform = this.model.transform;
   }
 
   update() {
@@ -68,12 +67,18 @@ export default class TransformBroadcaster extends CroquetView {
 
     if (!this.isMe) return;
 
+    if (this.time < 1000/this.rate) {
+      this.time += RE.Runtime.deltaTime * 1000;
+      return;
+    }
+
+    this.time = 0;
+
     const posChanged = !this.object3d.position.equals(this.lastPos);
     const rotChanged = !this.object3d.quaternion.equals(this.lastRot);
 
     if ((posChanged || rotChanged)) {
-      this.updateProp("pos");
-      this.updateProp("rot");
+      this.updateProp("transform");
 
       this.lastPos.copy(this.object3d.position);
       this.lastRot.copy(this.object3d.quaternion);
