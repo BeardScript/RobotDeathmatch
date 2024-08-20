@@ -4,10 +4,12 @@ import { RootModel } from './RootModel';
 import { RootView } from './RootView';
 import { RogueCroquet } from '.';
 
+@RE.registerComponent
 export default class CroquetConfig extends RE.Component {
+  static apiKey = "";
+  static appId = "";
+
   @RE.props.text() appName = "";
-  @RE.props.text() appId = "";
-  @RE.props.text() apiKey = "";
   @RE.props.num(0) autoSleep = 30;
   @RE.props.num(0) rejoinLimit = 1000;
 
@@ -16,9 +18,11 @@ export default class CroquetConfig extends RE.Component {
   async awake() {
     Croquet.App.root = RE.Runtime.rogueDOMContainer;
 
+    const config = await this.fetchConfig();
+
     RogueCroquet.mainSession = await Croquet.Session.join({
-      apiKey: this.apiKey,
-      appId: this.appId,
+      apiKey: config.apiKey,
+      appId: config.appId,
       name: this.appName,
       password: "secret",
       autoSleep: this.autoSleep,
@@ -51,7 +55,14 @@ export default class CroquetConfig extends RE.Component {
       session["step"](this.time);
     });
   }
-}
 
-RE.registerComponent(CroquetConfig);
-        
+  async fetchConfig() {
+    const res = await fetch(RE.getStaticPath("croquet.json"));
+    const config = await res.json();
+
+    CroquetConfig.apiKey = config.apiKey;
+    CroquetConfig.appId = config.appId;
+
+    return config;
+  }
+}

@@ -1,4 +1,5 @@
 import { WebGLRenderer, Scene, Object3D, Camera, Clock } from 'three';
+import * as THREE from 'three';
 import Lifecycle from './Lifecycle';
 import type Component from '../Model/Component';
 export default abstract class SceneController extends Lifecycle {

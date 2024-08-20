@@ -51,6 +51,7 @@ export default class RapierThirdPersonController extends RE.Component {
 
   awake() {
     if (!RE.Runtime.isRunning) return;
+    if (!this.enabled) return;
 
     this.camera = new THREE.PerspectiveCamera();
     this.cameraHandle.add(this.camera);

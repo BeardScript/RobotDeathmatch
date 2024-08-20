@@ -103,12 +103,13 @@ export default class RapierKinematicCharacterController extends RapierBody {
       this.jumpYStart = nextPosition.y;
     }
 
-    this.curJumpHeight = nextPosition.y - this.jumpYStart;
+    this.curJumpHeight = (nextPosition.y - this.jumpYStart) + this.offset * 1.1;
     const jumpPct = 100 - ((this.curJumpHeight * 100) /  this.jumpHeight);
     const jumpSpeedFactor = Math.max(jumpPct/100, 0.1);
     const curJumpSpeed = this.jumpSpeed * jumpSpeedFactor;
 
-    if (this.isJumpingUp && this.curJumpHeight >= this.jumpHeight || this.lastJumpHeight === this.curJumpHeight) {
+    // if (this.isJumpingUp && this.curJumpHeight >= this.jumpHeight || this.lastJumpHeight === this.curJumpHeight) {
+    if (this.isJumpingUp && this.curJumpHeight >= this.jumpHeight) {
       this.isJumpingUp = false;
     }
 

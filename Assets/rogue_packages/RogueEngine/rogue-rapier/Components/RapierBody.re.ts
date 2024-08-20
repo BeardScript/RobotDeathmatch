@@ -166,12 +166,14 @@ export default class RapierBody extends RE.Component {
   onBeforeRemoved(): void {
     if (this.body) {
       RogueRapier.world.removeRigidBody(this.body);
+      this.body = undefined as any;
     }
   }
 
   onDisabled(): void {
     if (this.body) {
       RogueRapier.world.removeRigidBody(this.body);
+      this.body = undefined as any;
     }
   }
 

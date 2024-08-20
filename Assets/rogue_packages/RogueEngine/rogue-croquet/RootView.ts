@@ -17,6 +17,13 @@ export class RootView extends Croquet.View {
       this.createActor(actor);
     });
 
+    this.subscribe(this.model.sessionId, "actorRemoved", modelId => {
+      const pawns = RE.getComponents(CroquetPawn);
+      const pawn = pawns.find(pawn => pawn.model.id === modelId);
+
+      if (pawn) pawn.object3d.parent?.remove(pawn.object3d);
+    });
+
     const pawns = RE.getComponents(CroquetPawn);
     pawns.forEach(pawn => {
       pawn.object3d.removeFromParent();
@@ -28,7 +35,7 @@ export class RootView extends Croquet.View {
         qComp.initialized = false;
         qComp.readySubscribed = false;
       }
-    })
+    });
 
     this.model.actors.forEach(actor => {
       this.createActor(actor);
@@ -37,7 +44,7 @@ export class RootView extends Croquet.View {
 
   createActor(actor: {model: Actor, viewId: string, pawnPrefab: string}) {
     if (actor.viewId === this.viewId) return;
-      
+
     const prefab = new RE.Prefab(actor.pawnPrefab);
 
     const pawn = prefab.instantiate();

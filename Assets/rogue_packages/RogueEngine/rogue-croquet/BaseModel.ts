@@ -4,12 +4,19 @@ export class BaseModel extends Croquet.Model {
   viewId: string;
   isStaticModel = false;
 
+  _propConfigs: Record<string, {updateTime: number, rate: number}> = {};
+
   init(params: {viewId: string}) {
     super.init(params);
     this.viewId = params.viewId;
 
+    this.constructor["propConfigs"] && 
+    Object.entries(this.constructor["propConfigs"]).forEach(([key, value]) => {
+      this["_propConfigs"][key] = {updateTime: 0, rate: value as number};
+    });
+
     this["constructor"]["binds"]?.forEach(key => {
-      if (!this["constructor"]["twoWayBinds"][key]) return;
+      if (!this["constructor"]["twoWayBinds"]?.[key]) return;
       this.subscribe(this.id, key, this.handleBinds);
     });
 
@@ -20,9 +27,11 @@ export class BaseModel extends Croquet.Model {
     this.onInit();
   }
 
-  private handleBinds(data: {key: string, value: any}) {
-    this.onBeforeUpdateProp(data.key, data.value);
-    this[data.key] = data.value;
+  private handleBinds(data: {key: string, value: any, viewId: string}) {
+    const value = this.onBeforeUpdateProp(data.key, data.value);
+    const changed = value !== undefined;
+    this["_" + data.key] = changed ? value : data.value;
+    this.publish(this.id, data.key + "View", {[data.key]: this["_" + data.key], viewId: data.viewId, changed});
   }
 
   private handleActions(data: {key: string, args: any[]}) {
@@ -42,7 +51,7 @@ export class BaseModel extends Croquet.Model {
 
   onRemoved() {}
 
-  static prop(twoWay = false) {
+  static prop(twoWay: boolean | number = false) {
     return (target: Object, key: string, descriptor?: PropertyDescriptor) => {
       Object.defineProperty(this.prototype, key, {
         get: function() { return this["_" + key] },
@@ -59,22 +68,52 @@ export class BaseModel extends Croquet.Model {
       if (!target.constructor["binds"]) target.constructor["binds"] = [];
       target.constructor["binds"].push(key);
 
+      if (!this["twoWayBinds"]) this["twoWayBinds"] = {};
+
+      if (!target.constructor["propConfigs"]) target.constructor["propConfigs"] = {};
+
       if (twoWay) {
-        if (!this["twoWayBinds"]) this["twoWayBinds"] = {};
         this["twoWayBinds"][key] = true;
+        if (typeof twoWay === "number" && twoWay > 0) {
+          target.constructor["propConfigs"][key] = twoWay;
+        }
       }
     }
   }
 
-  static action() {
+  static action(rate?: number) {
     return (target: Object, key: string, descriptor: PropertyDescriptor) => {
       const func = descriptor.value;
 
       this.prototype[key] = function(...args: []) {
+        const propConfig = this["_propConfigs"][key];
+
+        if (propConfig !== undefined) {
+          const now = this.now();
+          const dt = now - propConfig.updateTime;
+          if (dt >= propConfig.rate) {
+            propConfig.updateTime = now;
+          } else {
+            return;
+          }
+        }
+
         (func as Function).call(this, ...args);
       }
 
       descriptor.value = function(...args: []) {
+        const propConfig = this["_propConfigs"][key];
+
+        if (propConfig !== undefined) {
+          const now = Date.now();
+          const dt = now - propConfig.updateTime;
+          if (dt >= propConfig.rate) {
+            propConfig.updateTime = now;
+          } else {
+            return;
+          }
+        }
+
         (func as Function).call(this, ...args);
         this["view"].publish(this["model"].id, key, {key, args});
       }
@@ -82,12 +121,12 @@ export class BaseModel extends Croquet.Model {
       if (!this["actions"]) this["actions"] = [];
 
       this["actions"].push(key);
-    }
-  }
 
-  randomRange(min: number, max: number, floor = false) {
-    let rand = this.random() * (max - min);
-  
-    return floor ? Math.floor(rand) + min : rand + min;
+      if (!target.constructor["propConfigs"]) target.constructor["propConfigs"] = {};
+
+      if (typeof rate === "number" && rate > 0) {
+        target.constructor["propConfigs"][key] = rate;
+      }
+    }
   }
 }

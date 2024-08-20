@@ -40,6 +40,9 @@ export default class RapierBodyWireframe extends RE.Component {
     this.lines.frustumCulled = false;
 
     this.initPhysics().then(() => {
+      try {
+        this.world?.free();
+      } catch {};
       this.world = new RAPIER.World({x: 0, y: 0, z: 0});
       RogueRapier.world = this.world;
       this.initializedPhysics = true;
@@ -58,6 +61,9 @@ export default class RapierBodyWireframe extends RE.Component {
     this.handleOnComponentRemoved = RE.onComponentRemoved(this.resetHandler);
 
     this.handleOnPlay = RE.Runtime.onPlay(() => {
+      try {
+        this.world?.free();
+      } catch {};
       this.handleOnComponentAdded.stop();
       this.handleOnComponentRemoved.stop();
     });
@@ -101,13 +107,14 @@ export default class RapierBodyWireframe extends RE.Component {
 
   private updateImpostors() {
     this.lines.visible = true;
+
     this.world.step();
 
     const flagForRemoval: (RapierCollider | RapierBody)[] = [];
 
     this.colliders.forEach(component => {
       if (component instanceof RapierCollider && component.object3d && component.bodyComponent) {
-        if (!component.enabled) {
+        if (!component.enabled || !component.bodyComponent.enabled) {
           component.initialized = false;
           flagForRemoval.push(component);
           return;
@@ -121,7 +128,7 @@ export default class RapierBodyWireframe extends RE.Component {
       }
     });
 
-    flagForRemoval.forEach(component => this.colliders.splice(this.colliders.indexOf(component), 1))
+    flagForRemoval.forEach(component => this.colliders.splice(this.colliders.indexOf(component), 1));
 
     let buffers = this.world.debugRender();
 
@@ -146,6 +153,8 @@ export default class RapierBodyWireframe extends RE.Component {
 
   private async setupImpostors() {
     await this.cleanupImpostors();
+
+    if (this.selectedObjects[0] instanceof THREE.Scene) return;
 
     this.selectedObjects.forEach(selected => {
       selected.traverse(object => {

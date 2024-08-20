@@ -29,12 +29,15 @@ export default class RapierConfig extends RE.Component {
 
     RogueRapier.init(() => {
       RogueRapier.world.gravity = this.gravity;
+      RogueRapier.world.timestep = RE.Runtime.deltaTime;
+      RogueRapier.world.step(RogueRapier.eventQueue);
     });
   }
 
   start() {
     if (this.debug) {
       RE.App.currentScene.add(this.lines);
+      this.lines.frustumCulled = false;
     }
   }
 

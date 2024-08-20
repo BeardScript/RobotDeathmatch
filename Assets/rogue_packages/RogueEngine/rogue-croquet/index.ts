@@ -22,4 +22,9 @@ export class RogueCroquet {
   static get mainSessionId() {
     return this.mainSession?.["id"] as string;
   }
+
+  static Model(constructor: typeof Croquet.Model) {
+    constructor.register(constructor.name);
+    RootModel.modelClasses.set(constructor.name, constructor);
+  }
 }

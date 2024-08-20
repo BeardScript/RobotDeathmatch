@@ -1,19 +1,43 @@
 import * as RE from 'rogue-engine';
 import * as THREE from 'three';
-import { RootModel } from '@RE/RogueEngine/rogue-croquet/RootModel';
 import TDSController from './TDSController.re';
 import RogueCSS2D from '@RE/RogueEngine/rogue-css2d/RogueCSS2D.re';
 import CroquetPawn from '@RE/RogueEngine/rogue-croquet/CroquetPawn.re';
 import { Actor } from '@RE/RogueEngine/rogue-croquet/Actor';
+import { RogueCroquet } from '@RE/RogueEngine/rogue-croquet';
+import { GameLogicModel } from './GameLogic.re';
 
+@RogueCroquet.Model
 export class PlayerModel extends Actor {
   playerName = "";
   hp = 200;
   curHP = 200;
+  damage = 20;
   isShooting = new THREE.Vector3();
+  speed = 8 * ((100 + 20)/1000);
+  transform = {
+    pos: new THREE.Vector3(),
+    rot: new THREE.Quaternion(),
+  };
+
+  onBeforeUpdateProp(key: string, value: any) {
+    if (key === "transform") {
+      const pos = this.transform.pos.clone().setY(0);
+      const newPos = value.pos.clone().setY(0);
+      const dir = pos.sub(newPos);
+      const moveAmt = dir.length();
+
+      if (moveAmt > this.speed) {
+        value.pos.addScaledVector(dir.normalize(), this.speed);
+        return value;
+      }
+    }
+  }
 
   onInit() {
-    this.publish(this.sessionId, "playerSpawned", {model: this, viewId: this.viewId});
+    const gameLogicModel = this.wellKnownModel("GameLogic") as GameLogicModel;
+    const spawnPoint = gameLogicModel.selectSpawnPoint();
+    this.transform.pos.fromArray(spawnPoint);
   }
 
   onRemoved() {
@@ -21,17 +45,14 @@ export class PlayerModel extends Actor {
   }
 }
 
-PlayerModel.register("PlayerModel");
-RootModel.modelClasses.set("PlayerModel", PlayerModel);
-
+@RE.registerComponent
 export default class Player extends CroquetPawn {
   @PlayerModel.prop() 
-  @RE.props.num() hp = 200;
+  hp = 200;
 
   private _curHP = this.hp;
 
   @PlayerModel.prop() 
-  @RE.props.num()
   get curHP() {
     return this._curHP;
   }
@@ -57,12 +78,16 @@ export default class Player extends CroquetPawn {
 
   @PlayerModel.prop(true) 
   get isShooting() {
-    return this.tdsController?.isShooting ? this.tdsController.isShooting : new THREE.Vector3();
+    return this.tdsController.shootDir;
   }
 
   set isShooting(value: THREE.Vector3) {
-    if (!(value instanceof THREE.Vector3)) value = new THREE.Vector3();
-    this.tdsController.isShooting.copy(value);
+    if (this.isMe) return;
+    this.tdsController.weapon.fireRateCounter = 0;
+    this.tdsController.weapon.loadedRounds = 1000;
+
+    if (value.length() > 0)
+    this.tdsController.weapon.shoot(value);
   }
 
   private _playerName = "";
@@ -85,9 +110,30 @@ export default class Player extends CroquetPawn {
   @TDSController.require()
   tdsController: TDSController;
 
-  wasShooting = new THREE.Vector3();
+  networkPos = new THREE.Vector3();
+  networkRot = new THREE.Quaternion();
 
-  posWasFixed = false;
+  @PlayerModel.prop(60)
+  get transform() {
+    return {
+      pos: this.object3d.position,
+      rot: this.object3d.quaternion,
+    }
+  }
+
+  set transform(v: {pos: THREE.Vector3, rot: THREE.Quaternion}) {
+    const pos = this.networkPos || new THREE.Vector3();
+    pos.copy(v.pos);
+
+    const rot = this.networkRot || new THREE.Quaternion();
+    rot.copy(v.rot);
+
+    if (this.isMe) {
+      this.tdsController.characterController.body.setNextKinematicTranslation(v.pos);
+    }
+  }
+
+  prevShootDir = new THREE.Vector3();
 
   nameDiv: HTMLDivElement;
   healthbar: HTMLDivElement;
@@ -101,7 +147,15 @@ export default class Player extends CroquetPawn {
     this.healthbar = this.infoUI.div.querySelector(".health-bar-inner") as HTMLDivElement;
 
     this.curHP = this.model.curHP;
-    this.playerName = this.model.playerName;
+
+    if (this.isMe) {
+      this.playerName = this.playerName;
+      this.updateProp("playerName");
+    } else {
+      this.playerName = this.model.playerName;
+    }
+
+    this.transform = this.model.transform;
   }
 
   playerLeft = (data: {modelId: string, viewId: string}) => {
@@ -110,13 +164,22 @@ export default class Player extends CroquetPawn {
     }
   }
 
-  update() {
+  afterUpdate() {
     if (!this.initialized) return;
-    if (!this.isMe) return;
 
-    if (!this.tdsController.isShooting.equals(this.wasShooting)) {
-      this.updateProp("isShooting");
-      this.wasShooting.copy(this.tdsController.isShooting);
+    if (this.isMe) {
+      if (!this.tdsController.shootDir.equals(this.prevShootDir)) {
+        this.updateProp("isShooting");
+        this.prevShootDir.copy(this.tdsController.shootDir);
+      }
+
+      const posChanged = !this.transform.pos.equals(this.model.transform.pos);
+      const rotChanged = !this.transform.rot.equals(this.model.transform.rot);
+
+      if (posChanged || rotChanged) this.updateProp("transform");
+    } else {
+      this.object3d.quaternion.slerp(this.networkRot, 30 * RE.Runtime.deltaTime);
+      this.dampV3(this.object3d.position, this.networkPos, 20);
     }
   }
 
@@ -133,5 +196,3 @@ export default class Player extends CroquetPawn {
     }
   }
 }
-
-RE.registerComponent(Player);

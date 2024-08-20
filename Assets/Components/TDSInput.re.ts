@@ -64,7 +64,7 @@ export default class TDSInput extends RE.Component {
       const length = Math.abs(touchAim.x) + Math.abs(touchAim.y);
 
       if (length < 7) {
-        this.tdsController.isShooting.set(0,0,0);
+        this.tdsController.isShooting = false;
         return;
       }
 
@@ -79,7 +79,7 @@ export default class TDSInput extends RE.Component {
       this.tpController.target = this.tgt;
 
       if (!shootInput) {
-        this.tdsController.isShooting.set(0,0,0);
+        this.tdsController.isShooting = false;
         return;
       }
 
@@ -91,14 +91,14 @@ export default class TDSInput extends RE.Component {
 
       this.raycaster.setFromCamera(this.mousePos, RE.Runtime.camera);
 
-      const res = this.raycaster.intersectObject(this.floor, true);
+      const res = this.raycaster.intersectObject(this.floor);
 
       if (res.length > 0) {
         this.tgt.position.copy(res[0].point);
         this.tpController.target = this.tgt;
 
         if (!shootInput && aimInput) {
-        this.tdsController.isShooting.set(0,0,0);
+          this.tdsController.isShooting = false;
           return;
         }
 
@@ -107,7 +107,7 @@ export default class TDSInput extends RE.Component {
     } else {
       this.tdsController.isAiming = false;
       this.tpController.target = undefined;
-      this.tdsController.isShooting.set(0,0,0);
+      this.tdsController.isShooting = false;
     }
   }
 
@@ -115,10 +115,13 @@ export default class TDSInput extends RE.Component {
     RE.onNextFrame(() => RE.onNextFrame(() => {
       const qDot = this.object3d.quaternion.dot(this.tpController.targetRotation);
 
-      if (this.tdsController.isShooting.length() > 0 || Math.abs(qDot) >= 1) {
-        this.object3d.getWorldDirection(this.tdsController.isShooting);
+      if ((this.tdsController.isShooting || Math.abs(qDot) >= 1) && this.tdsController.weapon.canShoot) {
+        this.object3d.getWorldDirection(this.tdsController.shootDir);
+        // this.tdsController.isShooting = true;
+        this.tdsController.weapon.shoot(this.tdsController.shootDir);
       } else {
-        this.tdsController.isShooting.set(0,0,0);
+        this.tdsController.isShooting = false;
+        this.tdsController.shootDir.set(0,0,0);
       }
     }));
   }

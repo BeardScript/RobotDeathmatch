@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import Weapon from './Weapon.re';
 import RapierKinematicCharacterController from '@RE/RogueEngine/rogue-rapier/Components/RapierKinematicCharacterController.re';
 
+@RE.registerComponent
 export default class TDSController extends RE.Component {
   @RE.props.component(Weapon) weapon: Weapon;
 
@@ -27,7 +28,8 @@ export default class TDSController extends RE.Component {
   activeAction: THREE.AnimationAction;
   animationMixer = new THREE.AnimationMixer(this.object3d);
 
-  isShooting = new THREE.Vector3();
+  isShooting = false;
+  shootDir = new THREE.Vector3();
 
   movementDirection = new THREE.Vector3()
 
@@ -64,22 +66,17 @@ export default class TDSController extends RE.Component {
 
   worldDir = new THREE.Vector3();
 
-  update() {
-    if (this.isShooting.length() > 0) {
-      this.object3d.getWorldDirection(this.worldDir);
-      this.weapon.shoot(this.isShooting);
-    }
-
+  afterUpdate() {
     if (this.isMoving()) {
       if (this.activeAction === this.runAction || this.activeAction === this.runShootAction) {
         this.activeAction.setEffectiveWeight(this.movementDirection.length());
       } else {
-        this.mix(this.isShooting.length() > 0 ? this.runShootAction : this.runAction);
+        this.mix(this.isShooting ? this.runShootAction : this.runAction);
       }
     }
-    else if (this.isShooting.length() === 0) {
+    else if (!this.isShooting) {
       this.activeAction !== this.idleAction && this.mix(this.idleAction);
-    } else if (this.isShooting.length() > 0) {
+    } else if (this.isShooting) {
       this.activeAction !== this.idleShootAction && this.mix(this.idleShootAction, 0.001);
     }
 
@@ -103,6 +100,4 @@ export default class TDSController extends RE.Component {
     this.activeAction = action;
   }
 }
-
-RE.registerComponent(TDSController);
         

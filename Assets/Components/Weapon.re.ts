@@ -6,13 +6,7 @@ import * as THREE from 'three';
 import RapierBody from '@RE/RogueEngine/rogue-rapier/Components/RapierBody.re';
 import Player from './Player.re';
 
-const q1 = new THREE.Quaternion();
-const q2 = new THREE.Quaternion();
-const q3 = new THREE.Quaternion();
-
 const fullMuzzleFlashScale = new THREE.Vector3(1, 1, 1);
-
-const v1 = new THREE.Vector3();
 
 type BulletParticle = {
   obj: THREE.Object3D;
@@ -172,18 +166,14 @@ export default class Weapon extends RE.Component {
     for (let i = 0; i < this.shots; i++) {
       const bullet = this.projectileParticle.instantiate(this.projectilesContainer);
       this.muzzleFlash.getWorldPosition(bullet.position);
-      // this.object3d.getWorldPosition(bullet.position);
       bullet.position.x = this.parentObject.position.x;
       bullet.position.z = this.parentObject.position.z;
-      // this.parentObject.getWorldQuaternion(bullet.quaternion);
 
       bullet.position.add(dir);
       const tgt = bullet.position.clone();
       bullet.position.sub(dir);
 
       bullet.lookAt(tgt);
-
-      // q1.copy(RE.Runtime.camera.quaternion);
 
       const distance = 40;
       const targetPos = RE.Runtime.camera.position.clone();
@@ -194,10 +184,6 @@ export default class Weapon extends RE.Component {
 
         bullet.rotateX(THREE.MathUtils.degToRad(rotateX));
         bullet.rotateY(THREE.MathUtils.degToRad(rotateY));
-        // RE.Runtime.camera.rotateX(THREE.MathUtils.degToRad(rotateX));
-        // RE.Runtime.camera.rotateY(THREE.MathUtils.degToRad(rotateY));
-      } else {
-        // RE.Runtime.camera.quaternion.copy(this.object3d.quaternion);
       }
 
       const startPos = bullet.position.clone();
@@ -221,8 +207,6 @@ export default class Weapon extends RE.Component {
           enemyCharacter?.applyDamage();
         }
       });
-
-      // RE.Runtime.camera.quaternion.copy(q1);
     }
 
     if (this.shotSFX) {
@@ -272,8 +256,6 @@ export default class Weapon extends RE.Component {
       distance = Math.max(distance, 1);
 
       lerpV3(bullet.obj.position, bullet.targetPos, (1/bullet.distance) * this.particleSpeed, RE.Runtime.deltaTime);
-
-      // bullet.obj.position.lerp(bullet.targetPos, this.particleSpeed * (100/bullet.distance)  * RE.Runtime.deltaTime)
 
       distance = bullet.obj.position.distanceTo(bullet.startPos);
 

@@ -6,9 +6,10 @@
       "uuid": "ed4279a6-7009-4792-953f-a92261434d85"
     }
   ],
-  "projectVersion": 25,
+  "projectVersion": 26,
   "lastOpenedScene": "\\Assets\\Scenes\\AridLands.rogueScene",
   "tags": [
     "Enemy"
-  ]
+  ],
+  "useHttps": false
 }

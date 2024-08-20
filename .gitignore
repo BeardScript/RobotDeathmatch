@@ -3,5 +3,6 @@ node_modules/
 build/
 dist/
 BUILD/
+STATIC/croquet.json
 rogue_builds/
 package-lock.json

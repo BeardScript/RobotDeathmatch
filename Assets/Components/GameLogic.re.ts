@@ -1,11 +1,11 @@
 import * as RE from 'rogue-engine';
-import { RootModel } from '@RE/RogueEngine/rogue-croquet/RootModel';
 import { BaseModel } from '@RE/RogueEngine/rogue-croquet/BaseModel';
 import Player from './Player.re';
 import * as THREE from 'three';
 import RogueCSS2D from '@RE/RogueEngine/rogue-css2d/RogueCSS2D.re';
 import UIComponent from './UIComponent.re';
 import CroquetView from '@RE/RogueEngine/rogue-croquet/CroquetView.re';
+import { RogueCroquet } from '@RE/RogueEngine/rogue-croquet';
 
 function randomRange(min: number, max: number, floor = false) {
   let rand = Math.random() * (max - min);
@@ -13,13 +13,20 @@ function randomRange(min: number, max: number, floor = false) {
   return floor ? Math.floor(rand) + min : rand + min;
 }
 
+@RogueCroquet.Model
 export class GameLogicModel extends BaseModel {
   isStaticModel = true;
+  spawnPoints = [
+    [0, 5, 21], [9, 5, 21], [18, 5, 21], [25, 5, 10], [25, 5, 0], [25, 5, -12],
+    [12, 5, -15], [4, 5, -15], [-6, 5, -15], [-17, 5, -13], [-20, 5, 2], [-20, 5, 16],
+  ];
+
+  selectSpawnPoint() {
+    return this.spawnPoints[(Math.floor(Math.random() * this.spawnPoints.length))];
+  }
 }
 
-GameLogicModel.register("GameLogicModel");
-RootModel.modelClasses.set("GameLogicModel", GameLogicModel);
-
+@RE.registerComponent
 export default class GameLogic extends CroquetView {
   isStaticModel = true;
   model: GameLogicModel;
@@ -79,53 +86,7 @@ export default class GameLogic extends CroquetView {
     const player = this.player.instantiate();
 
     const playerComp = Player.get(player);
-    playerComp.playerName = params.name || params.viewId;
-
-    player.position.copy(this.getSpawnPosition());
-  }
-
-  raycaster = new THREE.Raycaster();
-
-  getSpawnPosition() {
-    const x = randomRange(-20, 20);
-    const z = randomRange(-20, 20);
-
-    this.raycaster.set({x, y: 100, z} as THREE.Vector3, {x: 0, y: -1, z: 0} as THREE.Vector3);
-    this.raycaster.far = 200;
-
-    const targetArea = RE.Runtime.scene.getObjectByName("Environment") as THREE.Object3D;
-
-    const res = this.raycaster.intersectObject(targetArea, true);
-
-    if (res.length > 0) {
-      if (res[0].object.name === "Floor") {
-        if (this.hitSomethingOnRadius({x, y: 100, z} as THREE.Vector3, 2)) return this.getSpawnPosition();
-
-        return {x, y: 5,  z} as THREE.Vector3;
-      }
-    }
-
-    return this.getSpawnPosition();
-  }
-
-  private hitSomethingOnRadius(v: THREE.Vector3, radius: number) {
-    const targetArea = RE.Runtime.scene.getObjectByName("Environment") as THREE.Object3D;
-    const raycastDir = {x: 0, y: -1, z: 0} as THREE.Vector3;
-    const hasHitSomething = () => this.raycaster.intersectObject(targetArea, true)?.[0].object.name !== "Floor";
-
-    for (let i = v.x - radius; i <  v.x + radius; i += 0.05) {
-      this.raycaster.set({x: i, y: 100, z: v.z} as THREE.Vector3, raycastDir);
-      if (hasHitSomething()) return true;
-    }
-
-    for (let i = v.z - radius; i <  v.z + radius; i += 0.05) {
-      this.raycaster.set({x: v.x, y: 100, z: i} as THREE.Vector3, raycastDir);
-      if (hasHitSomething()) return true;
-    }
-
-    return false;
+    playerComp.playerName = this.playerName;
   }
 }
-
-RE.registerComponent(GameLogic);
         

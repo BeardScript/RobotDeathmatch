@@ -59,7 +59,7 @@ export declare class App {
     }): void;
     static loadScene(name: string | number): Promise<void>;
     private static loadSceneFunc;
-    static clone(object: Object3D, parent?: Object3D): Object3D<import("three").Event>;
+    static clone(object: Object3D, parent?: Object3D): Object3D;
     private static loadComponentsRecursive;
     private static loadAudioListeners;
 }

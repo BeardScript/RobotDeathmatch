@@ -4,6 +4,7 @@ import RapierKinematicCharacterController from '@RE/RogueEngine/rogue-rapier/Com
 
 export default class RapierFirstPersonController extends RE.Component {
   @RE.props.vector3() cameraOffset = new THREE.Vector3(0, 1.6, 0.2);
+  @RE.props.vector2() lookSpeed = new THREE.Vector2(5, 5);
   @RE.props.num() minPolarAngle = -60;
   @RE.props.num() maxPolarAngle = 70;
   @RE.props.num() near = 0.1;
@@ -46,6 +47,11 @@ export default class RapierFirstPersonController extends RE.Component {
 
   start() {
     RE.Runtime.rogueDOMContainer.onclick = () => RE.Runtime.isRunning && RE.Input.mouse.lock();
+
+    if (!this.cameraHandle) return;
+
+    this.cameraHandle.position.y = this.cameraOffset.y;
+    this.cameraHandle.position.z = this.cameraOffset.z;
   }
 
   update() {
@@ -65,12 +71,12 @@ export default class RapierFirstPersonController extends RE.Component {
   moveCamera() {
     if (!this.cameraHandle) return;
 
-    this.cameraHandle.position.y = this.cameraOffset.y;
+    this.cameraHandle.position.y = THREE.MathUtils.damp(this.cameraHandle.position.y, this.cameraOffset.y, 0.2, 50 * RE.Runtime.deltaTime);
     this.cameraHandle.position.z = this.cameraOffset.z;
 
     let {y: rvAxis} = RE.Input.getAxes("Look");
 
-    this.camRotationX = rvAxis * RE.Runtime.deltaTime;
+    this.camRotationX = rvAxis * (this.lookSpeed.y / 10) * RE.Runtime.deltaTime;
 
     this.cameraHandle.rotateX(this.camRotationX);
 
@@ -87,6 +93,8 @@ export default class RapierFirstPersonController extends RE.Component {
   }
 
   setRotation() {
+    if (!this.characterController?.body) return;
+
     let {x: hAxis, y: vAxis} = RE.Input.getAxes("Move");
     let {x: rhAxis} = RE.Input.getAxes("Look");
 
@@ -108,7 +116,7 @@ export default class RapierFirstPersonController extends RE.Component {
     this.dummy.lookAt(this.appliedDirection);
     this.dummy.getWorldDirection(this.targetDirection);
 
-    this.object3d.rotateY(-rhAxis * RE.Runtime.deltaTime);
+    this.object3d.rotateY(-rhAxis * (this.lookSpeed.x / 10) * RE.Runtime.deltaTime);
 
     this.characterController.body.setRotation(this.object3d.quaternion, true);
   }

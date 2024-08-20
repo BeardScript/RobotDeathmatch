@@ -9,8 +9,6 @@ export class RootModel extends Croquet.Model {
 
   static types() {
     return {
-      // "THREE.Vector3": THREE.Vector3,
-      // "THREE.Quaternion": THREE.Quaternion,
       "THREE.Vector3": {
         cls: THREE.Vector3,
         write: v => [v.x, v.y, v.z],        // serialized as '[...,...,...]' which is shorter than the default above
@@ -55,10 +53,6 @@ export class RootModel extends Croquet.Model {
 
     const model = modelClass.create({viewId: params.viewId}) as Actor;
 
-    Object.keys(params.params).forEach((key) => {
-      model[key] = params.params[key];
-    });
-
     this.actors.set(model.id, {viewId: params.viewId, pawnPrefab: params.pawnPrefab, model});
     model.publish(this.sessionId, "actorCreated", {model: model, viewId: params.viewId, pawnPrefab: params.pawnPrefab});
   }
@@ -72,7 +66,11 @@ export class RootModel extends Croquet.Model {
       remove.forEach(key => actor.model.models.delete(key));
     });
 
-    this.actors.delete(params.modelId);
+    const removed = this.actors.delete(params.modelId);
+
+    if (removed) {
+      this.publish(this.sessionId, "actorRemoved", params.modelId);
+    }
   }
 
   createModel(params: {parentActor: string, modelName: string, componentName: string, viewId: string, isStatic: boolean, params: any}) {
@@ -91,9 +89,6 @@ export class RootModel extends Croquet.Model {
     if (!modelClass) return;
 
     const model = modelClass.create({viewId: params.viewId}) as BaseModel;
-    Object.keys(params.params).forEach((key) => {
-      model[key] = params.params[key];
-    });
 
     if (params.isStatic) {
       model.beWellKnownAs(params.componentName);

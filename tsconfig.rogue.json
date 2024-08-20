@@ -19,6 +19,8 @@
     "paths": {
       "rogue-engine": [ "_Rogue/rogue-engine" ],
       "@RE/*": [ "Assets/rogue_packages/*" ],
+      "three/nodes": [ "node_modules/@types/three/examples/jsm/nodes/Nodes" ],
+      "three/addons/*": [ "node_modules/@types/three/examples/jsm/*" ],
     }
   },
   "include": [
