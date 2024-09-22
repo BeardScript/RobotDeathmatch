@@ -50,9 +50,10 @@ export default class RapierKinematicCharacterController extends RapierBody {
   }
 
   beforeUpdate() {
-    super.beforeUpdate();
     if (!RogueRapier.initialized) return;
-    !this.initialized && this.init();
+    if (!this.initialized) return;
+
+    super.beforeUpdate();
 
     if (this.body?.numColliders() < 1) return;
 
@@ -75,6 +76,8 @@ export default class RapierKinematicCharacterController extends RapierBody {
       RE.Debug.logWarning("No character collider");
       return;
     }
+
+    RogueRapier.initialized && !this.initialized && this.init();
   }
 
   handleKinematicPositionBased() {

@@ -39,10 +39,11 @@ export default class RapierBodyWireframe extends RE.Component {
     this.lines.geometry.computeBoundingSphere();
     this.lines.frustumCulled = false;
 
+    try {
+      this.world?.free();
+    } catch {};
+
     this.initPhysics().then(() => {
-      try {
-        this.world?.free();
-      } catch {};
       this.world = new RAPIER.World({x: 0, y: 0, z: 0});
       RogueRapier.world = this.world;
       this.initializedPhysics = true;
@@ -127,6 +128,11 @@ export default class RapierBodyWireframe extends RE.Component {
         component.setColliderPos();
       }
     });
+
+    if (flagForRemoval.length > 0) {
+      this.resetComponents();
+      this.setupImpostors();
+    }
 
     flagForRemoval.forEach(component => this.colliders.splice(this.colliders.indexOf(component), 1));
 
