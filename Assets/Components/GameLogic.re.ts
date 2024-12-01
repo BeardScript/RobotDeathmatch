@@ -6,6 +6,7 @@ import RogueCSS2D from '@RE/RogueEngine/rogue-css2d/RogueCSS2D.re';
 import UIComponent from './UIComponent.re';
 import CroquetView from '@RE/RogueEngine/rogue-croquet/CroquetView.re';
 import { RogueCroquet } from '@RE/RogueEngine/rogue-croquet';
+import { CroquetLobby } from '@RE/RogueEngine/rogue-croquet/CroquetLobby.re';
 
 function randomRange(min: number, max: number, floor = false) {
   let rand = Math.random() * (max - min);
@@ -30,13 +31,19 @@ export class GameLogicModel extends BaseModel {
 export default class GameLogic extends CroquetView {
   isStaticModel = true;
   model: GameLogicModel;
-  playerName = "";
+  static playerName = "";
 
   @RE.props.prefab() player: RE.Prefab;
   @RE.props.prefab() networkPlayer: RE.Prefab;
 
   @RE.props.component(RogueCSS2D) welcomeScreen: RogueCSS2D;
   @RE.props.component(UIComponent) respawnScreen: UIComponent;
+
+  awake() {
+    if (!CroquetLobby.gameStarted) {
+      this.enabled = false;
+    }
+  }
 
   init() {
     this.view.subscribe(this.sessionId, "playerDestroyed", this.handlePlayerDestroyed);
@@ -59,7 +66,7 @@ export default class GameLogic extends CroquetView {
     RE.onNextFrame(() => {
       RE.onNextFrame(() => {
         const input = document.getElementById("name-select") as HTMLInputElement;
-        input.value = this.playerName;
+        input.value = GameLogic.playerName;
         input.placeholder = this.viewId;
         const startBtn = document.getElementById("start-btn") as HTMLDivElement;
         
@@ -76,17 +83,17 @@ export default class GameLogic extends CroquetView {
   setupRespawnScreen() {
     const respawnBtn = this.respawnScreen.container.querySelector("#respawn-btn") as HTMLDivElement;
     respawnBtn.onpointerdown = () => {
-      this.onPlayerJoined({viewId: this.view.viewId, name: this.playerName});
+      this.onPlayerJoined({viewId: this.view.viewId, name: GameLogic.playerName});
       this.respawnScreen.hide();
     }
   }
 
   onPlayerJoined = (params: {viewId: string, name?: string}) => {
-    this.playerName = params.name || params.viewId;
+    GameLogic.playerName = params.name || params.viewId;
     const player = this.player.instantiate();
 
     const playerComp = Player.get(player);
-    playerComp.playerName = this.playerName;
+    playerComp.playerName = GameLogic.playerName;
   }
 }
         

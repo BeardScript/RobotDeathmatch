@@ -41,7 +41,10 @@ export default class RogueCSS2D extends RE.Component {
 
   static setupLabelRenderer() {
     const container = RE.App.sceneController.rogueDOMContainer.parentElement as HTMLElement;
-    RogueCSS2D.renderer.domElement.childNodes.forEach(child => child.remove());
+    while (RogueCSS2D.renderer.domElement.firstChild) {
+      RogueCSS2D.renderer.domElement.removeChild(RogueCSS2D.renderer.domElement.lastChild as any);
+    }
+
     RogueCSS2D.renderer.domElement.id = "CSS2DRenderer";
     document.getElementById("CSS2DRenderer")?.remove();
     RogueCSS2D.renderer.setSize(RE.App.sceneController.rogueDOMContainer.clientWidth, RE.App.sceneController.rogueDOMContainer.clientHeight);
@@ -64,7 +67,7 @@ export default class RogueCSS2D extends RE.Component {
   }
 
   onBeforeRemoved() {
-    this.css2DObject.removeFromParent();
+    this.css2DObject.parent?.remove(this.css2DObject);
   }
 
   onDisabled(): void {
